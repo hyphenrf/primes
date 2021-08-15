@@ -1,6 +1,8 @@
 SHELL=/bin/sh
 
-OPTFLAGS ?=
+OPTFLAGS ?= -unsafe
+LIBS     ?=
+
 NPROC    ?= $(shell nproc)
 EXE      ?= drag
 IMPL     ?= primes_faithful
@@ -9,22 +11,25 @@ WANT     ?= $(EXE)-st
 REPEATS  ?= 10 # how many times to run for error normalization
 PERFTARG ?= # you must choose only one target to run perf on, it's expensive
 
-.PHONY: run perf clean $(EXE)-st $(EXE)-mt $(EXE)-im $(EXE)-mc
+.PHONY: run perf clean distclean $(EXE)-st $(EXE)-mt $(EXE)-im $(EXE)-mc
 
 
 all: run
 
-$(EXE)-st: $(IMPL).cmx
-	ocamlopt $(OPTFLAGS) -o $@ $<
+$(EXE)-st: $(IMPL)_st.ml
+	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
 
-$(EXE)-im: $(IMPL)_imp.cmx
-	ocamlopt $(OPTFLAGS) -o $@ $<
+$(EXE)-im: $(IMPL)_im.ml
+	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
 
-$(EXE)-mc: $(IMPL)_mc.cmx
-	ocamlopt $(OPTFLAGS) -o $@ $<
+$(EXE)-mc: $(IMPL)_mc.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
 
-$(EXE)-mt: $(IMPL)_mt.cmx
-	ocamlopt $(OPTFLAGS) -I +threads -o $@ unix.cmxa threads.cmxa $<
+$(EXE)-mt: $(IMPL)_mt.ml
+	ocamlopt $(OPTFLAGS) -o $@ -I +threads unix.cmxa threads.cmxa $(LIBS) $<
+
+$(EXE)-fk: $(IMPL)_fk.ml
+	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
 
 run: $(WANT)
 	@echo Running executables $(REPEATS) times with -t $(NPROC):
@@ -47,12 +52,9 @@ $(PERFTARG).data: $(PERFTARG)
 clean:
 	rm -f *.o *.cm?
 
-distclean:
+distclean: clean
 	rm -f $(EXE)*
 
-
-%.cmx %.cma %.o: %.ml
-	ocamlopt $(OPTFLAGS) -c $<
 
 guard-%:
 	@[ -n "${$*}" ]
