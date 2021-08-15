@@ -75,7 +75,7 @@ let run sieve =
 
 (*---------------------Runner & Profiling-------------------------*)
 
-let stamp = Sys.time
+let stamp = Unix.gettimeofday
 
 let main =
 
