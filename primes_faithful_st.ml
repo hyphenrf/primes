@@ -22,7 +22,7 @@ type t = { size : int; store : bytes }
 
 
 let create size =
-  { size; store = Bytes.create size } (* inverted i.e. 0 = true *)
+  { size; store = Bytes.make size '\000' } (* inverted i.e. 0 = true *)
 
 
 (*---------------------All performance here-----------------------*)
@@ -43,13 +43,14 @@ let isqrt i =
 
 (* Hottest function *)
 let rec clr_all s i skip =
-  let stop = s.size - (skip lsl 1 + skip) in
+  let stop = s.size - (skip lsl 2) in
    if i < stop then
    begin clr s.store i
        ; clr s.store (i + skip)
        ; clr s.store (i + skip lsl 1)
        ; clr s.store (i + skip lsl 1 + skip)
-       ; clr_all s   (i + skip lsl 2) skip
+       ; clr s.store (i + skip lsl 2)
+       ; clr_all s   (i + skip lsl 2 + skip) skip
     end else
        clr_slow s i skip
 
