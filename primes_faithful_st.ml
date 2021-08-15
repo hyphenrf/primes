@@ -41,11 +41,22 @@ let clr buf i =
 let isqrt i =
   float i |> sqrt |> int_of_float
 
-let rec clr_all sieve i skip =
- if i < sieve.size then
- begin
-    clr sieve.store i
-      ; clr_all sieve (i + skip) skip
+(* Hottest function *)
+let rec clr_all s i skip =
+  let stop = s.size - (skip lsl 1 + skip) in
+   if i < stop then
+   begin clr s.store i
+       ; clr s.store (i + skip)
+       ; clr s.store (i + skip lsl 1)
+       ; clr s.store (i + skip lsl 1 + skip)
+       ; clr_all s   (i + skip lsl 2) skip
+    end else
+       clr_slow s i skip
+
+and clr_slow s i skip =
+ if i < s.size then
+ begin clr s.store i
+     ; clr_slow s (i + skip) skip
  end
 
 let run sieve =
@@ -77,9 +88,8 @@ let main =
 
   let rec loop finish passes =
    if stamp() < finish then
-   begin
-      create size |> run
-        ; loop finish (passes + 1)
+   begin create size |> run
+       ; loop finish (passes + 1)
    end else
       passes
   in
