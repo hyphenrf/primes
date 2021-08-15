@@ -13,7 +13,7 @@ let meta =
   { name = "bytes"
   ; bits = 8
   ; size = 1_000_000
-  ; threads = 1 (* TODO *)
+  ; threads = 1
   ; faithful = "yes"
   ; algorithm = "base"
   }
@@ -23,12 +23,6 @@ type t = { size : int; store : bytes }
 
 let create size =
   { size; store = Bytes.create size } (* inverted i.e. 0 = true *)
-
-let count {store; size} =
-  Bytes.to_seq store
-    |> Seq.map (fun c -> int_of_char c lxor 1)
-    |> Seq.fold_left (+) 0
-    |> fun n -> n - size / 2 (* all even bits are untouched *)
 
 
 (*---------------------All performance here-----------------------*)
@@ -75,22 +69,24 @@ let run sieve =
 
 (*---------------------Runner & Profiling-------------------------*)
 
-let stamp = Unix.gettimeofday
+let stamp = Sys.time
 
 let main =
 
   let size = meta.size in
 
-  let rec loop start duration passes =
-   if duration < 5. then
+  let rec loop finish passes =
+   if stamp() < finish then
    begin
       create size |> run
-        ; loop start (stamp() -. start) (passes + 1)
+        ; loop finish (passes + 1)
    end else
-      duration, passes
+      passes
   in
 
-  let duration, passes = loop (stamp()) 0. 0 in
+  let start = stamp() in
+  let passes = loop (start+.5.) 0 in
+  let duration = stamp() -. start in
 
   (* print the results *)
   Printf.printf "hyphenrf-%s;%d;%.5f;%d;algorithm=%s,faithful=%s,bits=%d\n"
@@ -101,6 +97,16 @@ let main =
 (*---verification (assertions are removed on optimized builds)----*)
 
 let tests =
+  let count {store; size} =
+    let count = ref 1
+    and i     = ref 3
+    in
+    while !i < size do
+      if get store !i then incr count
+         ; i := !i + 2
+    done
+      ; !count
+  in
   let historical =
     [ 10, 4
     ; 100, 25

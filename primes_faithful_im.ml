@@ -13,7 +13,7 @@ let meta =
   { name = "bytes"
   ; bits = 8
   ; size = 1_000_000
-  ; threads = 1 (* TODO *)
+  ; threads = 1
   ; faithful = "yes"
   ; algorithm = "base"
   }
@@ -46,8 +46,8 @@ let run { store; size } =
 
   let factor = ref 3
   and idx    = ref 1
-  and q      = isqrt size
-  in
+  and q      = isqrt size in
+
   while !factor <= q do
 
     while not (get store !factor) do
@@ -67,29 +67,31 @@ let run { store; size } =
 
 (*---------------------Runner & Profiling-------------------------*)
 
-let stamp = Unix.gettimeofday
+let stamp = Sys.time
 
 let main =
 
   let size = meta.size in
 
-  let passes = ref 0 in
-  let duration = ref 0. in
+  let passes = ref 0
+  and now    = ref 0. in
 
   (* timing function call overhead is counted off *)
-  let start_tm = stamp() in
-  let overhead = stamp() in
-  let start = 2. *. overhead -. start_tm in
+  let start  = stamp()     in
+  let finish = start +. 5. in
 
-  while !duration < 5. do
+  while !now < finish do
     create size |> run
-      ; duration := stamp() -. start
-      ; passes   := !passes + 1
+      ; now    := stamp()
+      ; passes := !passes + 1
   done;
+
+  let passes = !passes in
+  let duration = !now -. start in
 
   (* print the results *)
   Printf.printf "hyphenrf-%s;%d;%.5f;%d;algorithm=%s,faithful=%s,bits=%d\n"
-    meta.name !passes !duration meta.threads
+    meta.name passes duration meta.threads
     meta.algorithm meta.faithful meta.bits
 
 
@@ -98,8 +100,8 @@ let main =
 let tests =
   let count {store; size} =
     let count = ref 1
-    and i     = ref 3
-    in
+    and i     = ref 3 in
+
     while !i < size do
       if get store !i then incr count
          ; i := !i + 2

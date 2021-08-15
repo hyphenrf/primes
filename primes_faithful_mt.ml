@@ -83,7 +83,7 @@ let run sieve =
 
 (*---------------------Runner & Profiling-------------------------*)
 
-let stamp = Unix.gettimeofday
+let stamp = Sys.time
 
 let main =
 
@@ -91,17 +91,17 @@ let main =
   let size     = meta.size
   and returns  = Array.make meta.threads 0
   in
-  let rec loop (start, duration, passes) =
-   if duration < 5. then
+  let rec loop finish passes =
+   if stamp() < finish then
    begin
       create size |> run
-        ; loop (start, stamp() -. start, passes + 1)
+        ; loop finish (passes + 1)
    end else
       passes
   in
 
   let create_thread cell = Thread.create (fun () ->
-    returns.(cell) <- loop (stamp(), 0., 0)
+    returns.(cell) <- loop (stamp()+.5.) 0
   )
   in
   let pool = Array.init meta.threads create_thread in
@@ -115,8 +115,8 @@ let main =
   let _ = Array.iter Thread.join pool in
 
   (* results *)
-  let duration = stamp() -. start in
   let passes = Array.fold_left (+) 0 returns in
+  let duration = stamp() -. start in
 
   Printf.printf "hyphenrf-%s;%d;%.5f;%d;algorithm=%s,faithful=%s,bits=%d\n"
     meta.name passes duration meta.threads

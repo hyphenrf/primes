@@ -10,7 +10,7 @@ type meta =
   }
 
 let meta =
-  { name = "bytes-mt"
+  { name = "bytes-fork"
   ; bits = 8
   ; size = 1_000_000
   ; faithful = "yes"
@@ -18,6 +18,8 @@ let meta =
   ; threads = 2
   }
 
+
+(* Arg parsing *)
 let set_threads i = meta.threads <- i
 
 let spec = let open Arg in
@@ -83,7 +85,7 @@ let run sieve =
 
 (*---------------------Runner & Profiling-------------------------*)
 
-let stamp = Unix.gettimeofday
+let stamp = Sys.time
 
 let main =
 
@@ -95,11 +97,11 @@ let main =
     in getmsb (-1) meta.threads
   in
 
-  let rec loop start duration passes =
-   if duration < 5. then
+  let rec loop finish passes =
+   if stamp() < finish then
    begin
       create size |> run
-        ; loop start (stamp() -. start) (passes + 1)
+        ; loop finish (passes + 1)
    end else
       passes
   in
@@ -120,7 +122,7 @@ let main =
     Stack.push (fork()) pid;
   done;
 
-  let passes = loop start 0. 0 in
+  let passes = loop (start+.5.) 0 in
   let passes = ref passes in
 
   for i = 1 to forks do

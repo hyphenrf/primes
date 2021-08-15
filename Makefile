@@ -17,10 +17,10 @@ PERFTARG ?= # you must choose only one target to run perf on, it's expensive
 all: run
 
 $(EXE)-st: $(IMPL)_st.ml
-	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
 
 $(EXE)-im: $(IMPL)_im.ml
-	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
 
 $(EXE)-mc: $(IMPL)_mc.ml
 	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<

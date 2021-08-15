@@ -90,19 +90,19 @@ let main =
   (* inits *)
   let size     = meta.size
   and returns  = Array.make meta.threads 0
-  and limit    = Int64.mul 5L 1_000_000_000L (* ns in s *)
-  in
-  let rec loop (start, duration, passes) =
-   if Int64.unsigned_compare duration limit < 0 then
+  and limit    = Int64.mul 5L 1_000_000_000L (* ns in s *) in
+
+  let rec loop finish passes =
+   if Int64.unsigned_compare (stamp()) finish < 0 then
    begin
       create size |> run
-        ; loop (start, Int64.sub (stamp()) start, passes + 1)
+        ; loop finish (passes + 1)
    end else
       passes
   in
 
   let create_thread cell () = Domain.spawn (fun () ->
-    returns.(cell) <- loop (stamp(), 0L, 0)
+    returns.(cell) <- loop (Int64.add (stamp()) limit) 0
   )
   in
   let pool = Array.init meta.threads create_thread in
