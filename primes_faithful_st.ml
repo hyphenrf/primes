@@ -9,15 +9,6 @@ type meta =
   ; algorithm : string
   }
 
-let meta =
-  { name = "bytes"
-  ; bits = 8
-  ; size = 1_000_000
-  ; threads = 1
-  ; faithful = "yes"
-  ; algorithm = "base"
-  }
-
 type t = { size : int; store : bytes }
 
 
@@ -81,15 +72,21 @@ let run sieve =
 
 (*---------------------Runner & Profiling-------------------------*)
 
+let meta =
+  { name = "bytes"
+  ; bits = 8
+  ; size = 1_000_000
+  ; threads = 1
+  ; faithful = "yes"
+  ; algorithm = "base"
+  }
+
 let stamp = Sys.time
 
 let main =
 
-  let size = meta.size in
-
-  let rec loop finish passes =
-   if stamp() < finish then
-   begin create size |> run
+  let rec loop finish passes = if stamp() < finish then
+   begin create meta.size |> run
        ; loop finish (passes + 1)
    end else
       passes
