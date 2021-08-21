@@ -54,9 +54,9 @@ struct
        if i < stop then (* we do a little unrolling *)
        begin clr s.store i
            ; clr s.store (i + skip)
-           ; clr s.store (i + skip lsl 1)
-           ; clr s.store (i + skip lsl 1 + skip)
-           ; clr_all s   (i + skip lsl 2 ) skip stop
+           ; clr s.store (i + skip * 2) (* lea *)
+           ; clr s.store (i + skip * 2 + skip) (* lea + add *)
+           ; clr_all s   (i + skip * 4 ) skip stop
         end else
            clr_rest s i skip
 
@@ -76,21 +76,21 @@ struct
   let run sieve =
     let q = isqrt sieve.size in
     let rec run factor sieve q =
-      let factor = get_next factor sieve.store in
+      let factor = next factor sieve.store in
        if factor <= q then
-          begin clr_all sieve (factor * factor) (factor + factor)
+          begin clr_all sieve (factor * factor) (factor * 2)
               ; run (factor + 2) sieve q
           end
-    and get_next factor store =
+    and next factor store =
      if get store factor then factor else
-        get_next (factor + 2) store
+        next (factor + 2) store
     in
     run 3 sieve q
 
 
 (*---verification (assertions are removed on optimized builds)----*)
 
-  let tests =
+  let test =
     assert begin
       let count {store; size} =
         let count = ref 1
@@ -117,11 +117,11 @@ struct
       let expected = List.assoc size historical in
       let sieve = create size in run sieve;
       let count = count sieve in
-       if count = expected then true else begin
+        count = expected || begin
           Printf.printf "size: %#d, count: %#d, expect: %#d\n"
             size count expected;
           false
-       end
+        end
     end
 end
 
