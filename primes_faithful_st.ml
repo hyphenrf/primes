@@ -20,9 +20,12 @@ end
 struct
   type t = { size : int; store : bytes }
 
+  let alloc n v =
+    let buf = Bytes.create n in
+    Bytes.unsafe_fill buf 0 n v; buf
 
   let create size =
-    { size; store = Bytes.make (size lsr 1) '\000' } (* inverted i.e. 0 = true *)
+    { size; store = alloc (size lsr 1) '\x01' }
     (* We only need to know about odds, not evens. So if we say our unit size is
        4-bits, we can get a byte that's both an even number and an odd number,
        and operate exclusively on the odd part. *)
@@ -31,10 +34,10 @@ struct
 (*---------------------All performance here-----------------------*)
 
   let get buf i =
-    Bytes.unsafe_get buf (i lsr 1) = '\000'
+    Bytes.unsafe_get buf (i lsr 1) = '\x01'
 
   let clr buf i =
-    Bytes.unsafe_set buf (i lsr 1) '\001'
+    Bytes.unsafe_set buf (i lsr 1) '\x00'
     (* The reason having the shift here is faster than inside the hot loop where
        "it may be called less if it's factored out" is that a shift already
        takes place. Remember that OCaml integers are tagged, and that bytes are
