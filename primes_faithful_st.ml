@@ -13,68 +13,75 @@ type t = { size : int; store : bytes }
 
 
 let create size =
-  { size; store = Bytes.make size '\000' } (* inverted i.e. 0 = true *)
+  { size; store = Bytes.make (size lsr 1) '\000' } (* inverted i.e. 0 = true *)
+  (* We only need to know about odds, not evens. So if we say our unit size is
+     4-bits, we can get a byte that's both an even number and an odd number,
+     and operate exclusively on the odd part. *)
 
 
 (*---------------------All performance here-----------------------*)
 
-(* faithfullness requirements don't specify that I must _use_ the whole buffer
-   I allocated, it just requires me to allocate n elements where n = sieve_size.
- * I can use only half that for better locality and still count as faithful, by
-   modifying my getters and setters to access in halves. This gives around 15%
-   boost for size 1 million. *)
 let get buf i =
   Bytes.unsafe_get buf (i lsr 1) = '\000'
 
 let clr buf i =
   Bytes.unsafe_set buf (i lsr 1) '\001'
+  (* The reason having the shift here is faster than inside the hot loop where
+     "it may be called less if it's factored out" is that a shift already
+     takes place. Remember that OCaml integers are tagged, and that bytes are
+     represented as ocaml integers. The compiler recognizes the shift and just
+     shifts by 2 instead of by 1, which makes ocaml right-shifts --At least in
+     this position-- SUPER cheap and equivalent to just using the number as an
+     argument. This is why the shift is present in get and set like that. *)
+
+
+(* Hottest function *)
+let clr_all s i skip =
+  let stop = s.size - (skip lsl 1 + skip) in
+  let rec clr_all s i skip stop =
+     if i < stop then (* we do a little unrolling *)
+     begin clr s.store i
+         ; clr s.store (i + skip)
+         ; clr s.store (i + skip lsl 1)
+         ; clr s.store (i + skip lsl 1 + skip)
+         ; clr_all s   (i + skip lsl 2 ) skip stop
+      end else
+         clr_rest s i skip
+
+  and clr_rest s i skip =
+   if i < s.size then
+   begin clr s.store i
+       ; clr_rest s (i + skip) skip
+   end
+
+  in
+  clr_all s i skip stop
+
 
 let isqrt i =
   float i |> sqrt |> int_of_float
 
-(* Hottest function *)
-let rec clr_all s i skip =
-  let stop = s.size - (skip lsl 2) in
-   if i < stop then
-   begin clr s.store i
-       ; clr s.store (i + skip)
-       ; clr s.store (i + skip lsl 1)
-       ; clr s.store (i + skip lsl 1 + skip)
-       ; clr s.store (i + skip lsl 2)
-       ; clr_all s   (i + skip lsl 2 + skip) skip
-    end else
-       clr_slow s i skip
-
-and clr_slow s i skip =
- if i < s.size then
- begin clr s.store i
-     ; clr_slow s (i + skip) skip
- end
-
 let run sieve =
   let q = isqrt sieve.size in
-
-  let rec get_next factor =
-   if get sieve.store factor then factor else
-      get_next (factor + 2)
+  let rec run factor sieve q =
+    let factor = get_next factor sieve.store in
+     if factor <= q then
+        begin clr_all sieve (factor * factor) (factor + factor)
+            ; run (factor + 2) sieve q
+        end
+  and get_next factor store =
+   if get store factor then factor else
+      get_next (factor + 2) store
   in
-  let rec run factor =
-   if factor <= q then
-      let factor = get_next factor in
-
-      clr_all sieve (factor * factor) (factor + factor)
-        ; run (factor + 2)
-  in
-
-  run 3
+  run 3 sieve q
 
 
 
 (*---------------------Runner & Profiling-------------------------*)
 
 let meta =
-  { name = "bytes"
-  ; bits = 8
+  { name = "nibbles"
+  ; bits = 4
   ; size = 1_000_000
   ; threads = 1
   ; faithful = "yes"
