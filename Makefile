@@ -32,6 +32,21 @@ $(EXE)-mt: $(IMPL)_mt.ml
 $(EXE)-fk: $(IMPL)_fk.ml
 	ocamlopt $(OPTFLAGS) -o $@ unix.cmxa $(LIBS) $<
 
+$(EXE)-1b: $(IMPL)_1b.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
+
+$(EXE)-hb: $(IMPL)_hb.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
+
+$(EXE)-bb: $(IMPL)_bb.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
+
+$(EXE)-bm: $(IMPL)_bm.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
+
+$(EXE)-bs: $(IMPL)_bs.ml
+	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
+
 run: $(WANT)
 	@echo Running executables $(REPEATS) times with -t $(NPROC):
 	@for i in $(EXE)*; do \
