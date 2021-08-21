@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-OPTFLAGS ?= -unsafe
+OPTFLAGS ?= -unsafe -nodynlink
 LIBS     ?=
 
 NPROC    ?= $(shell nproc)
