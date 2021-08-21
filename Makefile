@@ -11,10 +11,11 @@ WANT     ?= $(EXE)-st
 REPEATS  ?= 10 # how many times to run for error normalization
 PERFTARG ?= # you must choose only one target to run perf on, it's expensive
 
-.PHONY: run perf clean distclean $(EXE)-st $(EXE)-mt $(EXE)-im $(EXE)-mc
+.PHONY: run perf clean distclean
 
 
 all: run
+
 
 $(EXE)-st: $(IMPL)_st.ml
 	ocamlopt $(OPTFLAGS) -o $@ $(LIBS) $<
@@ -54,6 +55,7 @@ clean:
 
 distclean: clean
 	rm -f $(EXE)*
+	rm -f perf*
 
 
 guard-%:
