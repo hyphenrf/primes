@@ -49,7 +49,7 @@ $(EXE)-bs: $(IMPL)_bs.ml
 
 run: $(WANT)
 	@echo Running executables $(REPEATS) times with -t $(NPROC):
-	@for i in $(EXE)*; do \
+	@for i in $(WANT); do \
 	  for j in `seq 1 $(REPEATS)`; do \
 	    ./$$i -t $(NPROC); \
 	    printf "%d, " $$j 1>&2; \
